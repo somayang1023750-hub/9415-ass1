@@ -2,8 +2,44 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <cstdint>
 
 namespace craft::graphics {
+namespace {
+// Seeded value noise: unsigned arithmetic and no mutable RNG state, so material
+// lattice values are reproducible and independent of generation order.
+constexpr std::uint32_t kMaterialSeed = 0x941526U;
+float latticeValue(int x, int y, int z) {
+    std::uint32_t h = kMaterialSeed ^ (static_cast<std::uint32_t>(x) * 0x8da6b343U)
+        ^ (static_cast<std::uint32_t>(y) * 0xd8163841U)
+        ^ (static_cast<std::uint32_t>(z) * 0xcb1ab31fU);
+    h ^= h >> 16; h *= 0x7feb352dU;
+    h ^= h >> 15; h *= 0x846ca68bU; h ^= h >> 16;
+    return static_cast<float>(h >> 8) / 16777215.0F;
+}
+float materialNoise(float x, float y, float z) {
+    const int ix = static_cast<int>(std::floor(x));
+    const int iy = static_cast<int>(std::floor(y));
+    const int iz = static_cast<int>(std::floor(z));
+    const auto smooth = [](float t) { return t*t*(3.0F-2.0F*t); };
+    const float sx = smooth(x-ix), sy = smooth(y-iy), sz = smooth(z-iz);
+    const auto layer = [&](int dz) {
+        return std::lerp(std::lerp(latticeValue(ix,iy,iz+dz), latticeValue(ix+1,iy,iz+dz), sx),
+                         std::lerp(latticeValue(ix,iy+1,iz+dz), latticeValue(ix+1,iy+1,iz+dz), sx), sy);
+    };
+    return std::lerp(layer(0), layer(1), sz);
+}
+BlockType terrainMaterial(int x, int y, int z, int height) {
+    const int depth = height-y;
+    if (depth == 0) return BlockType::Grass;
+    // Protect the upper soil, vary the rock/soil interface by column, and leave
+    // sparse coherent soil pockets in the predominantly rocky lower volume.
+    const int soilDepth = 2 + static_cast<int>(3.0F * materialNoise(x*0.18F, 3.7F, z*0.18F));
+    if (depth <= soilDepth) return BlockType::Dirt;
+    const float threshold = 0.68F + 0.008F * std::min(depth,10);
+    return materialNoise(x*0.24F, y*0.35F, z*0.24F) > threshold ? BlockType::Dirt : BlockType::Stone;
+}
+} // namespace
 
 VoxelWorld::VoxelWorld(bool generate) {
     blocks_.fill(BlockType::Air);
@@ -41,8 +77,7 @@ void VoxelWorld::generateTerrain() {
         for (int z = 0; z < kDepth; ++z) {
             const int height = terrainHeight(x, z);
             for (int y = 0; y <= height; ++y) {
-                setBlock(x, y, z, y == height ? BlockType::Grass :
-                    (y >= height - 2 ? BlockType::Dirt : BlockType::Stone));
+                setBlock(x, y, z, terrainMaterial(x,y,z,height));
             }
         }
     }

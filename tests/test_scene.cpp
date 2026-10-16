@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <limits>
+#include <cmath>
+#include "app/SceneSettings.h"
 
 using namespace craft::graphics;
 
@@ -59,11 +61,12 @@ TEST_CASE("Fly camera cannot tunnel through a wall and slides along it", "[camer
     REQUIRE(free.position().x > 3.0F);
 }
 
-TEST_CASE("Fly camera respects floor bounds, frame time, pitch and release", "[camera]") {
+TEST_CASE("Fly camera respects lower flight bounds, frame time, pitch and release", "[camera]") {
     VoxelWorld world(false);
     Camera camera({0,1,0});
     for (int i=0; i<20; ++i) camera.processKeyboard(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS, .1F, &world);
-    REQUIRE(camera.position().y >= 0.21F);
+    REQUIRE(camera.position().y >= -16.0F);
+    REQUIRE(camera.position().y < -15.9F);
     const auto before = camera.position();
     camera.processKeyboard(GLFW_KEY_W, GLFW_RELEASE, 0.1F, &world);
     camera.processKeyboard(GLFW_KEY_W, GLFW_PRESS, -1.0F, &world);
@@ -98,4 +101,94 @@ TEST_CASE("Local head and shoulder poses leave siblings unchanged; root moves al
     REQUIRE(moved.leftLeg == root * neutral.leftLeg);
     REQUIRE(moved.rightLeg == root * neutral.rightLeg);
     REQUIRE(moved.torso == root * neutral.torso);
+}
+
+TEST_CASE("Seeded soil and rock form lower patches while the top stays stone-free", "[world]") {
+    VoxelWorld world;
+    int bottomStone = 0, bottomDirt = 0, deepStone = 0, deepDirt = 0;
+    for (int x=0; x<32; ++x) for (int z=0; z<32; ++z) {
+        const auto bottom = world.blockAt(x,0,z);
+        bottomStone += bottom == BlockType::Stone;
+        bottomDirt += bottom == BlockType::Dirt;
+        // The tower deliberately overwrites its footprint, so examine terrain outside it.
+        if (x>=13 && x<=19 && z>=13 && z<=19) continue;
+        const int h = VoxelWorld::terrainHeight(x,z);
+        REQUIRE(world.blockAt(x,h,z) == BlockType::Grass);
+        REQUIRE(world.blockAt(x,h-1,z) == BlockType::Dirt);
+        REQUIRE(world.blockAt(x,h-2,z) == BlockType::Dirt);
+        for (int y=0; y<=h-4; ++y) {
+            const auto block = world.blockAt(x,y,z);
+            deepStone += block == BlockType::Stone;
+            deepDirt += block == BlockType::Dirt;
+        }
+    }
+    REQUIRE(bottomDirt > 5);
+    REQUIRE(bottomStone > bottomDirt*3);
+    REQUIRE(deepDirt > 5);
+    REQUIRE(deepStone > deepDirt*3);
+}
+
+TEST_CASE("Collision-enabled camera can fly below the island but cannot enter its underside", "[camera]") {
+    VoxelWorld world;
+    Camera camera({40,5,16}, {0,1,0}, -90,0);
+    for (int i=0; i<14; ++i) camera.processKeyboard(GLFW_KEY_LEFT_SHIFT,GLFW_PRESS,.1F,&world);
+    REQUIRE(camera.position().y < -10.0F);
+    for (int i=0; i<16; ++i) camera.processKeyboard(GLFW_KEY_A,GLFW_PRESS,.1F,&world);
+    REQUIRE(camera.position().x > 19.0F);
+    REQUIRE(camera.position().x < 22.0F);
+    for (int i=0; i<30; ++i) camera.processKeyboard(GLFW_KEY_SPACE,GLFW_PRESS,.1F,&world);
+    REQUIRE(camera.position().y < -0.19F);
+    REQUIRE(camera.position().y > -0.41F);
+    REQUIRE_FALSE(world.intersectsCamera(camera.position()));
+}
+
+TEST_CASE("Walking swings opposite limbs in phase and legs pivot at fixed hips", "[hierarchy][walk]") {
+    const auto pose = walkingPose({},90.0F,35.0F);
+    REQUIRE(std::abs(pose.rightArmPitch-35.0F) < .0001F);
+    REQUIRE(pose.leftArmPitch == -pose.rightArmPitch);
+    REQUIRE(pose.rightLegPitch == -pose.rightArmPitch);
+    REQUIRE(pose.leftLegPitch == pose.rightArmPitch);
+    const auto reverse = walkingPose({},270.0F,35.0F);
+    REQUIRE(std::abs(reverse.rightArmPitch+pose.rightArmPitch) < .0001F);
+    const glm::mat4 identity(1);
+    const auto m = humanoidTransforms(identity,pose);
+    const auto neutral = humanoidTransforms(identity);
+    REQUIRE(m.torso == neutral.torso);
+    REQUIRE(m.head == neutral.head);
+    constexpr float s = 1.0F/16.0F;
+    const glm::vec4 hipInLeg(0,6*s,0,1);
+    REQUIRE(glm::length(m.rightLeg*hipInLeg-glm::vec4(-2*s,12*s,0,1)) < .0001F);
+    REQUIRE(glm::length(m.leftLeg*hipInLeg-glm::vec4(2*s,12*s,0,1)) < .0001F);
+    const glm::vec4 shoulderInArm(0,6*s,0,1);
+    REQUIRE(glm::length(m.rightArm*shoulderInArm-glm::vec4(-6*s,24*s,0,1)) < .0001F);
+    REQUIRE(glm::length(m.leftArm*shoulderInArm-glm::vec4(6*s,24*s,0,1)) < .0001F);
+    const auto base = walkingPose({10,20,-15,5,-8},90,0);
+    REQUIRE(base.headYaw == 10);
+    REQUIRE(base.rightArmPitch == 20);
+    REQUIRE(base.leftArmPitch == -15);
+    REQUIRE(base.rightLegPitch == 5);
+    REQUIRE(base.leftLegPitch == -8);
+}
+
+TEST_CASE("Walk animation can pause, scrub, reset and remain independent per character", "[walk]") {
+    craft::app::SceneSettings settings;
+    auto& a = settings.characters[0];
+    auto& b = settings.characters[1];
+    const float phase = a.walkPhase;
+    a.advanceWalk(.1F);
+    REQUIRE(a.walkPhase == phase); // Neutral by default, including in benchmarks.
+    a.walking = a.animateWalk = true;
+    a.advanceWalk(.1F);
+    REQUIRE(a.walkPhase != phase);
+    REQUIRE(b.walkPhase == phase);
+    a.animateWalk = false;
+    const auto paused = a.walkPhase;
+    a.advanceWalk(.1F);
+    REQUIRE(a.walkPhase == paused);
+    a.walkPhase = 270;
+    REQUIRE(a.effectivePose().rightArmPitch < 0);
+    a = {};
+    REQUIRE_FALSE(a.walking);
+    REQUIRE(a.effectivePose().rightLegPitch == 0);
+    REQUIRE(a.effectivePose().leftArmPitch == 0);
 }

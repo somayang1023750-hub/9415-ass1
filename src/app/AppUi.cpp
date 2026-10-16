@@ -1,6 +1,7 @@
 #include "app/AppUi.h"
 
 #include <stdexcept>
+#include <algorithm>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -41,6 +42,8 @@ void AppUi::beginFrame() {
 bool AppUi::draw(const BenchmarkSnapshot& benchmark) {
   constexpr float panelWidth = 380.0F;
   ImGui::SetNextWindowSize(ImVec2(panelWidth, 0.0F), ImGuiCond_Always);
+  ImGui::SetNextWindowSizeConstraints(ImVec2(panelWidth,0.0F),
+      ImVec2(panelWidth,std::max(160.0F,ImGui::GetIO().DisplaySize.y-20.0F)));
   ImGui::SetNextWindowPos(ImVec2(10.0F, 10.0F), ImGuiCond_FirstUseEver);
   ImGui::Begin("Craft controls", nullptr,
                ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize);

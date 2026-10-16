@@ -23,7 +23,7 @@ namespace craft::app {
             data_.chunkDepth);
         ImGui::Text("Solid Blocks: %zu", data_.solidBlockCount);
         ImGui::Text("Visible faces: %zu | Triangles: %zu", data_.triangleCount / 2, data_.triangleCount);
-        ImGui::TextUnformatted("Terrain: fixed sin/cos rule (no randomness)");
+        ImGui::TextUnformatted("Terrain: fixed height / seeded material noise");
 
         ImGui::SeparatorText("Render Settings");
         ImGui::BeginDisabled(interactionDisabled);
@@ -42,7 +42,22 @@ namespace craft::app {
             ImGui::SliderFloat3("Root offset", &character.offset.x, -3.0F, 3.0F, "%.1f");
             ImGui::SliderFloat("Root yaw", &character.yaw, -180.0F, 180.0F, "%.0f");
             ImGui::SliderFloat("Head yaw", &character.pose.headYaw, -75.0F, 75.0F, "%.0f");
-            ImGui::SliderFloat("Right arm", &character.pose.rightArmPitch, -90.0F, 90.0F, "%.0f");
+            if (ImGui::TreeNode("Manual limb angles")) {
+                ImGui::SliderFloat("Right arm", &character.pose.rightArmPitch, -90.0F, 90.0F, "%.0f");
+                ImGui::SliderFloat("Left arm", &character.pose.leftArmPitch, -90.0F, 90.0F, "%.0f");
+                ImGui::SliderFloat("Right leg", &character.pose.rightLegPitch, -60.0F, 60.0F, "%.0f");
+                ImGui::SliderFloat("Left leg", &character.pose.leftLegPitch, -60.0F, 60.0F, "%.0f");
+                ImGui::TreePop();
+            }
+            ImGui::Checkbox("Walking pose", &character.walking);
+            if (character.walking) {
+                ImGui::Checkbox("Animate walk", &character.animateWalk);
+                ImGui::SliderFloat("Stride angle", &character.strideAngle, 0.0F, 45.0F, "%.0f deg");
+                ImGui::BeginDisabled(character.animateWalk);
+                ImGui::SliderFloat("Walk phase", &character.walkPhase, 0.0F, 360.0F, "%.0f deg");
+                ImGui::EndDisabled();
+                ImGui::SliderFloat("Walk speed", &character.walkSpeed, 0.2F, 3.0F, "%.1f Hz");
+            }
             if (ImGui::Button("Reset selected to neutral")) character = {};
         }
         ImGui::EndDisabled();

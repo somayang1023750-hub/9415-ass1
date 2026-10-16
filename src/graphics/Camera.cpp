@@ -42,7 +42,7 @@ namespace craft::graphics {
             for (int axis = 0; axis < 3; ++axis) {
                 auto candidate = position_;
                 candidate[axis] += delta[axis];
-                candidate = glm::clamp(candidate, glm::vec3(-16.0F, 0.21F, -16.0F), glm::vec3(48.0F, 48.0F, 64.0F));
+                candidate = glm::clamp(candidate, glm::vec3(-16.0F, -16.0F, -16.0F), glm::vec3(48.0F, 48.0F, 64.0F));
                 if (!world->intersectsCamera(candidate)) position_ = candidate;
             }
         }

@@ -205,6 +205,9 @@ int main() {
           framebufferHeight = resizedFramebuffer.second;
       }
 
+      if (!gBenchmarkRunning)
+        for (auto& characterSettings : settings.characters) characterSettings.advanceWalk(deltaTime);
+
       benchmark.beginSceneFrame();
 
       glViewport(0, 0, framebufferWidth, framebufferHeight);
@@ -242,7 +245,7 @@ int main() {
         const auto& control = settings.characters[i];
         auto model = glm::translate(glm::mat4(1), origins[i] + control.offset);
         model = glm::rotate(model, glm::radians(control.yaw), glm::vec3(0,1,0));
-        character.draw(shader, model, control.pose);
+        character.draw(shader, model, control.effectivePose());
       }
 
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
