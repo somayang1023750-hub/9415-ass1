@@ -33,34 +33,34 @@ namespace craft::graphics {
 
     inline std::array<glm::vec2, 4> getFaceUVs(BlockType type, FaceDirection face) {
         int tileX = 0;
-        int tileY = 0;
+        int tileY = 15;
 
         switch (type) {
         case BlockType::Grass:
             if (face == FaceDirection::Top) {
-                tileX = 2; tileY = 0;
+                tileX = 0; tileY = 13;
             }
             else if (face == FaceDirection::Bottom) {
-                tileX = 6; tileY = 0;
+                tileX = 6; tileY = 15;
             }
             else {
-                tileX = 0; tileY = 0;
+                tileX = 0; tileY = 14;
             }
             break;
         case BlockType::Dirt:
-            tileX = 6; tileY = 0;
+            tileX = 6; tileY = 15;
             break;
         case BlockType::Stone:
-            tileX = 5; tileY = 0;
+            tileX = 5; tileY = 15;
             break;
         case BlockType::Wood:
-            tileX = 4; tileY = 0;
+            tileX = 4; tileY = 15;
             break;
         case BlockType::Brick:
-            tileX = 3; tileY = 0;
+            tileX = 3; tileY = 15;
             break;
         default:
-            tileX = 5; tileY = 0;
+            tileX = 5; tileY = 15;
             break;
         }
 
@@ -69,8 +69,9 @@ namespace craft::graphics {
 
         float u0 = tileX * tileSize + pad;
         float u1 = (tileX + 1) * tileSize - pad;
-        float v0 = 1.0F - (tileY + 1) * tileSize + pad;
-        float v1 = 1.0F - tileY * tileSize - pad;
+        // Images are uploaded without a vertical flip: V increases downwards.
+        float v0 = (tileY + 1) * tileSize - pad;
+        float v1 = tileY * tileSize + pad;
 
         return {
             glm::vec2(u0, v0),

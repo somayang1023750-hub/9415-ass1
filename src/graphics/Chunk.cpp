@@ -83,9 +83,7 @@ namespace craft::graphics {
         const float fz = static_cast<float>(z);
 
         glm::vec3 tint = glm::vec3(1.0F, 1.0F, 1.0F);
-        if (type == BlockType::Grass && face == FaceDirection::Top) {
-            tint = glm::vec3(0.45F, 0.78F, 0.25F);
-        }
+        // The atlas grass tiles already contain their final green colour.
 
         glm::vec3 p0, p1, p2, p3;
 
@@ -117,7 +115,7 @@ namespace craft::graphics {
         case FaceDirection::West: // -X
             p0 = { fx,     fy,     fz };
             p1 = { fx,     fy,     fz + 1 };
-            p2 = { fx + 1, fy + 1, fz + 1 };
+            p2 = { fx,     fy + 1, fz + 1 };
             p3 = { fx,     fy + 1, fz };
             break;
         case FaceDirection::East: // +X

@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(craft_tests
     test_math.cpp
+    test_graphics_uv.cpp
 )
 
 target_link_libraries(craft_tests PRIVATE
