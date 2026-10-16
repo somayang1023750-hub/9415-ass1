@@ -3,6 +3,8 @@ set(CRAFT_CORE_SOURCES
 )
 
 set(CRAFT_GRAPHICS_SOURCES
+    graphics/AtlasMesh.cpp
+    graphics/NaturalProps.cpp
     graphics/BoxMesh.cpp
     graphics/Camera.cpp
     graphics/VoxelWorld.cpp

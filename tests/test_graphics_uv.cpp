@@ -53,3 +53,29 @@ TEST_CASE("Skin UVs use unflipped 64x64 image coordinates and upright back faces
     }
   }
 }
+
+TEST_CASE("Natural props select bark, end grain and cutout foliage from the bundled atlas", "[atlas][tree]") {
+  using namespace craft::graphics;
+  const auto bark=getFaceUVs(BlockType::Wood,FaceDirection::South);
+  const auto end=getFaceUVs(BlockType::Wood,FaceDirection::Top);
+  REQUIRE(bark == atlasTileUVs(4,14));
+  REQUIRE(end == atlasTileUVs(4,13));
+  REQUIRE(getFaceUVs(BlockType::Leaves,FaceDirection::Top) == atlasTileUVs(14,15));
+  int width,height,channels;
+  auto* pixels=stbi_load(craft::core::assetPath("textures/texture.png").string().c_str(),&width,&height,&channels,4);
+  REQUIRE(pixels != nullptr);
+  int leafCutouts=0, greenLeaves=0, flowerCutouts=0, redPetals=0;
+  for(int y=0;y<16;++y) for(int x=0;x<16;++x) {
+    const auto* leaf=pixels+((15*16+y)*width+14*16+x)*4;
+    leafCutouts+=leaf[0]==255 && leaf[1]==0 && leaf[2]==255;
+    greenLeaves+=leaf[1]>leaf[0] && leaf[1]>leaf[2];
+    const auto* flower=pixels+((12*16+y)*width+2*16+x)*4;
+    flowerCutouts+=flower[0]==255 && flower[1]==0 && flower[2]==255;
+    redPetals+=flower[0]>flower[1]*2 && flower[2]<100;
+  }
+  stbi_image_free(pixels);
+  REQUIRE(leafCutouts > 0);
+  REQUIRE(greenLeaves > 100);
+  REQUIRE(flowerCutouts > 100);
+  REQUIRE(redPetals > 10);
+}

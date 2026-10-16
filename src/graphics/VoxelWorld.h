@@ -12,7 +12,10 @@ public:
     static constexpr int kWidth = 32, kHeight = 32, kDepth = 32;
     explicit VoxelWorld(bool generate = true);
     void generateTerrain();
-    [[nodiscard]] static int terrainHeight(int x, int z);
+    static constexpr int kTerrainSeed = 941526;
+    [[nodiscard]] static int terrainHeight(int x, int z, int seed = kTerrainSeed);
+    [[nodiscard]] static int towerFloorHeight();
+    [[nodiscard]] static int towerRoofHeight() { return towerFloorHeight()+13; }
     [[nodiscard]] BlockType blockAt(int x, int y, int z) const;
     [[nodiscard]] bool isSolid(int x, int y, int z) const;
     void setBlock(int x, int y, int z, BlockType type);

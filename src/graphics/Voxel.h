@@ -12,7 +12,8 @@ namespace craft::graphics {
         Dirt,
         Stone,
         Wood,
-        Brick
+        Brick,
+        Leaves
     };
 
     enum class FaceDirection : uint8_t {
@@ -30,6 +31,14 @@ namespace craft::graphics {
         float brightness;
         glm::vec3 colorModifier;
     };
+
+    inline std::array<glm::vec2, 4> atlasTileUVs(int tileX, int tileY) {
+        constexpr float tileSize = 1.0F / 16.0F;
+        constexpr float pad = 0.001F;
+        const float u0 = tileX * tileSize + pad, u1 = (tileX+1)*tileSize-pad;
+        const float bottom = (tileY+1)*tileSize-pad, top = tileY*tileSize+pad;
+        return {glm::vec2(u0,bottom), glm::vec2(u1,bottom), glm::vec2(u1,top), glm::vec2(u0,top)};
+    }
 
     inline std::array<glm::vec2, 4> getFaceUVs(BlockType type, FaceDirection face) {
         int tileX = 0;
@@ -54,7 +63,11 @@ namespace craft::graphics {
             tileX = 5; tileY = 15;
             break;
         case BlockType::Wood:
-            tileX = 4; tileY = 15;
+            tileX = 4;
+            tileY = face == FaceDirection::Top || face == FaceDirection::Bottom ? 13 : 14;
+            break;
+        case BlockType::Leaves:
+            tileX = 14; tileY = 15;
             break;
         case BlockType::Brick:
             tileX = 3; tileY = 15;
@@ -64,21 +77,7 @@ namespace craft::graphics {
             break;
         }
 
-        constexpr float tileSize = 1.0F / 16.0F;
-        constexpr float pad = 0.001F;
-
-        float u0 = tileX * tileSize + pad;
-        float u1 = (tileX + 1) * tileSize - pad;
-        // Images are uploaded without a vertical flip: V increases downwards.
-        float v0 = (tileY + 1) * tileSize - pad;
-        float v1 = tileY * tileSize + pad;
-
-        return {
-            glm::vec2(u0, v0),
-            glm::vec2(u1, v0),
-            glm::vec2(u1, v1),
-            glm::vec2(u0, v1)
-        };
+        return atlasTileUVs(tileX,tileY);
     }
 
     inline float getFaceBrightness(FaceDirection face) {

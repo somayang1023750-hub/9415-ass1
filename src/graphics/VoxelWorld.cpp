@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <cstdint>
+#include <FastNoise/FastNoise.h>
 
 namespace craft::graphics {
 namespace {
@@ -65,10 +66,32 @@ void VoxelWorld::setBlock(int x, int y, int z, BlockType type) {
     block = type;
     if (block != BlockType::Air) ++solidCount_;
 }
-int VoxelWorld::terrainHeight(int x, int z) {
-    // Fixed analytic rule, no random state: identical on every run.
-    return std::clamp(8 + static_cast<int>(3.0 * std::sin(x * 0.25) +
-                                          2.0 * std::cos(z * 0.25)), 3, 16);
+int VoxelWorld::terrainHeight(int x, int z, int seed) {
+    // Reuse the starter's pinned FastNoise2 dependency. Four Perlin octaves
+    // combine broad hills and finer detail, with a fixed default seed.
+    static const auto heightNoise = [] {
+        auto perlin = FastNoise::New<FastNoise::Perlin>();
+        perlin->SetScale(1.0F); // Frequency is applied to the coordinates below.
+        auto fbm = FastNoise::New<FastNoise::FractalFBm>();
+        fbm->SetSource(perlin);
+        fbm->SetOctaveCount(4);
+        fbm->SetGain(0.5F);
+        fbm->SetLacunarity(2.0F);
+        return fbm;
+    }();
+    constexpr float frequency = 0.075F;
+    constexpr float amplitudeSum = 1.0F + 0.5F + 0.25F + 0.125F;
+    const float noise = heightNoise->GenSingle2D(x*frequency, z*frequency, seed) / amplitudeSum;
+    return std::clamp(static_cast<int>(std::lround(9.0F + 10.0F*noise)), 4, 15);
+}
+int VoxelWorld::towerFloorHeight() {
+    static const int floor = [] {
+        int highest = 0;
+        for (int x=13; x<=19; ++x)
+            for (int z=13; z<=19; ++z) highest = std::max(highest,terrainHeight(x,z));
+        return highest;
+    }();
+    return floor;
 }
 void VoxelWorld::generateTerrain() {
     blocks_.fill(BlockType::Air);
@@ -81,11 +104,14 @@ void VoxelWorld::generateTerrain() {
             }
         }
     }
+    const int floor = towerFloorHeight(), roof = towerRoofHeight();
     for (int x = 13; x <= 19; ++x) {
         for (int z = 13; z <= 19; ++z) {
-            for (int y = 9; y <= 22; ++y) {
-                const bool wall = x == 13 || x == 19 || z == 13 || z == 19 || y == 9 || y == 22;
-                const bool doorway = z == 19 && x >= 16 && x <= 17 && y >= 10 && y <= 12;
+            // Fill beneath the level floor so the tower cannot float on a hill.
+            for (int y=terrainHeight(x,z)+1; y<floor; ++y) setBlock(x,y,z,BlockType::Brick);
+            for (int y = floor; y <= roof; ++y) {
+                const bool wall = x == 13 || x == 19 || z == 13 || z == 19 || y == floor || y == roof;
+                const bool doorway = z == 19 && x >= 16 && x <= 17 && y >= floor+1 && y <= floor+3;
                 setBlock(x, y, z, wall && !doorway ? BlockType::Brick : BlockType::Air);
             }
         }

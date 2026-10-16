@@ -5,7 +5,7 @@
 
 namespace craft::graphics {
 
-    Texture::Texture(const std::filesystem::path& filepath) {
+    Texture::Texture(const std::filesystem::path& filepath, bool magentaCutout) {
         int width = 0;
         int height = 0;
         int channels = 0;
@@ -15,6 +15,11 @@ namespace craft::graphics {
 
         if (!data) {
             throw std::runtime_error("Failed to load texture at path: " + filepath.string());
+        }
+
+        if (magentaCutout) {
+            for (std::size_t i=0; i<static_cast<std::size_t>(width)*height*4; i+=4)
+                if (data[i]==255 && data[i+1]==0 && data[i+2]==255) data[i+3]=0;
         }
 
         glGenTextures(1, &id_);

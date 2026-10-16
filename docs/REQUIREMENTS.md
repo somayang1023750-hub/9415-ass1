@@ -5,11 +5,12 @@ Reference: the COMP3421/COMP9415 26T3 MiniCraft Core specification supplied by t
 | Requirement | Implementation / evidence |
 | --- | --- |
 | Core 1: starter pipeline, indexed geometry, diagnostics | `Chunk`, `BoxMesh`, `AppUi`, `CustomUi`; VAO/VBO/EBO draw calls; visible faces/triangles/camera/chunk counts |
-| Core 2: logical 32³ chunk, terrain, structure, ≥100 solids, repeatability, hidden-face removal | `VoxelWorld`, `Chunk`; 10,171 final solids, deterministic sin/cos height and seeded soil/stone noise, hollow tower with door; 4,820 exposed quads |
+| Core 2: logical 32³ chunk, terrain, structure, ≥100 solids, repeatability, hidden-face removal | `VoxelWorld`, `Chunk`; 10,573 final solids, fixed-seed four-octave Perlin fBm heights and separate soil/stone noise, hollow tower with door; 5,126 exposed quads |
 | Core 3: separate transforms, perspective fly camera, dt movement, vertical controls, pitch clamp, cursor toggle, depth | `Camera`, `main.cpp`; keys documented in README/UI; camera regression tests |
 | Core 4: atlas and top/side/bottom tiles, sharp filtering, GLSL shading | `Voxel.h`, `Texture`, `basic.vert/.frag`; grass top/side/dirt UVs, nearest filtering and padding; actual atlas regression test |
-| Challenge 1: two textured multipart objects, parent-child transforms, neutral poses, attribution | Tower/Ground humanoids; root → hips/torso → legs/shoulders → head/arms; independent UI controls; `HumanoidPose.h` plus coordinated static/animated walk; `docs/ATTRIBUTION.md` |
-| Challenge 2, selected feature 1 | Deterministic procedural terrain height variation in `VoxelWorld::terrainHeight` |
+| Challenge 1: two textured multipart objects, parent-child transforms, neutral poses, attribution | Tower/Ground humanoids plus two trees with trunk/forks/child crowns; root → hips/torso → legs/shoulders → head/arms; independent UI controls; `HumanoidPose.h` plus coordinated static/animated walk; `docs/ATTRIBUTION.md` |
+| Natural decorations | Shared atlas wood/leaf cubes, two editable hierarchical trees, 12 crossed-plane plants; magenta cutouts converted to alpha and tested in GLSL |
+| Challenge 2, selected feature 1 | FastNoise2 Perlin + four-octave fBm in `VoxelWorld::terrainHeight`; seed 941526; actual column heights span 4…14; reproducibility, seed sensitivity and continuity tested |
 | Challenge 2, selected feature 2 | Adjustable distance fog in GLSL with shared world-space distance for chunk and characters |
 | Challenge 2, selected feature 3 | Small-step eye AABB voxel collision, axis sliding and outer bounds in `Camera` / `VoxelWorld` |
 | Benchmark | Course harness, 60 warm-up / exactly 240 measured frames, 1920×1080, fixed settings and camera, GPU finish; renderer/version/count logs |

@@ -18,6 +18,7 @@
 #include "graphics/Chunk.h"
 #include "graphics/Texture.h"
 #include "graphics/Humanoid.h"
+#include "graphics/NaturalProps.h"
 
 #include <GLFW/glfw3.h>
 
@@ -60,7 +61,7 @@ void printBenchmarkResult(const craft::app::BenchmarkSnapshot& result,
             << " average_fps=" << result.averageFramesPerSecond
             << " resolution=" << framebufferWidth << 'x' << framebufferHeight
             << " workload=" << kStarterWorkload << '\n'
-            << "benchmark_settings=fixed-camera neutral-poses fog-off wireframe-off\n";
+            << "benchmark_settings=fixed-camera neutral-poses default-trees fog-off wireframe-off\n";
 }
 
 GLFWcursorposfun gPrevCursorPosCallback = nullptr;
@@ -81,9 +82,11 @@ int main() {
     craft::app::AppUi appUi(window);
     craft::app::SceneBenchmark benchmark;
 
-    craft::graphics::Texture atlasTexture(craft::core::assetPath("textures/texture.png"));
+    craft::graphics::Texture atlasTexture(craft::core::assetPath("textures/texture.png"), true);
     craft::graphics::Texture characterTexture(craft::core::assetPath("textures/character.png"));
     craft::graphics::Humanoid character;
+    craft::graphics::NaturalProps naturalProps;
+    const glm::vec3 origins[] = {{16,static_cast<float>(craft::graphics::VoxelWorld::towerRoofHeight()+1),16}, {16, static_cast<float>(craft::graphics::VoxelWorld::terrainHeight(16,24)+1),24}};
 
     gPrevCursorPosCallback = glfwSetCursorPosCallback(
         window.nativeHandle(),
@@ -238,9 +241,9 @@ int main() {
       shader.setInt("uTexture", 0);
       shader.setMat4("uModel", glm::mat4(1.0F));
       chunk.draw();
+      naturalProps.draw(shader,settings.trees);
 
       characterTexture.bind(0);
-      const glm::vec3 origins[] = {{16,23,16}, {16, static_cast<float>(craft::graphics::VoxelWorld::terrainHeight(16,24)+1),24}};
       for (std::size_t i = 0; i < settings.characters.size(); ++i) {
         const auto& control = settings.characters[i];
         auto model = glm::translate(glm::mat4(1), origins[i] + control.offset);

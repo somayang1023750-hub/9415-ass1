@@ -7,7 +7,8 @@ namespace craft::graphics {
 
 	class Texture {
 	public:
-		explicit Texture(const std::filesystem::path& filepath);
+		// The bundled terrain atlas uses opaque magenta as its cutout key.
+        explicit Texture(const std::filesystem::path& filepath, bool magentaCutout = false);
 		~Texture();
 
 		Texture(const Texture&) = delete;

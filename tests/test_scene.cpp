@@ -18,11 +18,11 @@ TEST_CASE("Generated terrain is repeatable and counts only final occupied voxels
             for (int z = 0; z < 32; ++z) counted += world.isSolid(x,y,z);
     REQUIRE(counted == world.solidBlockCount());
     REQUIRE(counted >= 100);
-    REQUIRE(VoxelWorld::terrainHeight(0,0) != VoxelWorld::terrainHeight(16,16));
-    REQUIRE(world.blockAt(16,11,19) == BlockType::Air); // Tower doorway.
-    REQUIRE(world.blockAt(14,11,19) == BlockType::Brick);
-    REQUIRE(world.blockAt(16,11,16) == BlockType::Air); // Hollow interior.
-    REQUIRE(world.blockAt(16,22,16) == BlockType::Brick);
+    const int floor = VoxelWorld::towerFloorHeight();
+    REQUIRE(world.blockAt(16,floor+2,19) == BlockType::Air); // Tower doorway.
+    REQUIRE(world.blockAt(14,floor+2,19) == BlockType::Brick);
+    REQUIRE(world.blockAt(16,floor+2,16) == BlockType::Air); // Hollow interior.
+    REQUIRE(world.blockAt(16,VoxelWorld::towerRoofHeight(),16) == BlockType::Brick);
     REQUIRE(world.blockAt(16, VoxelWorld::terrainHeight(16,24), 24) == BlockType::Grass);
     REQUIRE_FALSE(world.isSolid(-1, 0, 0));
     world.generateTerrain();
@@ -191,4 +191,75 @@ TEST_CASE("Walk animation can pause, scrub, reset and remain independent per cha
     REQUIRE_FALSE(a.walking);
     REQUIRE(a.effectivePose().rightLegPitch == 0);
     REQUIRE(a.effectivePose().leftArmPitch == 0);
+}
+
+TEST_CASE("Perlin height noise is varied, coherent, seeded and repeatable", "[world][noise]") {
+    int minimum = 32, maximum = 0, changedSeed = 0;
+    bool levels[32]{};
+    int heights[32][32]{};
+    for (int x=0; x<32; ++x) for (int z=0; z<32; ++z) {
+        const int h = VoxelWorld::terrainHeight(x,z);
+        heights[x][z] = h;
+        REQUIRE(h >= 4);
+        REQUIRE(h <= 15);
+        REQUIRE(h == VoxelWorld::terrainHeight(x,z,VoxelWorld::kTerrainSeed));
+        minimum = std::min(minimum,h); maximum = std::max(maximum,h); levels[h] = true;
+        changedSeed += h != VoxelWorld::terrainHeight(x,z,VoxelWorld::kTerrainSeed+1);
+        if (x<31) REQUIRE(std::abs(h-VoxelWorld::terrainHeight(x+1,z)) <= 4);
+        if (z<31) REQUIRE(std::abs(h-VoxelWorld::terrainHeight(x,z+1)) <= 4);
+    }
+    int distinct = 0;
+    for (bool level : levels) distinct += level;
+    REQUIRE(maximum-minimum >= 4);
+    REQUIRE(distinct >= 5);
+    REQUIRE(changedSeed > 100);
+    // A reverse traversal cannot consume or change a hidden RNG sequence.
+    for (int x=31; x>=0; --x) for (int z=31; z>=0; --z)
+        REQUIRE(heights[x][z] == VoxelWorld::terrainHeight(x,z));
+}
+
+TEST_CASE("Tower foundation and character surfaces adapt to Perlin hills", "[world][noise]") {
+    VoxelWorld world;
+    const int floor = VoxelWorld::towerFloorHeight(), roof = VoxelWorld::towerRoofHeight();
+    REQUIRE(roof+3 < VoxelWorld::kHeight);
+    for (int x=13; x<=19; ++x) for (int z=13; z<=19; ++z) {
+        REQUIRE(floor >= VoxelWorld::terrainHeight(x,z));
+        REQUIRE(world.blockAt(x,floor,z) == BlockType::Brick);
+        REQUIRE(world.blockAt(x,roof,z) == BlockType::Brick);
+        for (int y=0; y<floor; ++y) REQUIRE(world.isSolid(x,y,z));
+    }
+    const int ground = VoxelWorld::terrainHeight(16,24)+1;
+    REQUIRE_FALSE(world.intersectsCamera({16.0F,static_cast<float>(roof)+1.25F,16.0F}));
+    REQUIRE_FALSE(world.intersectsCamera({16.0F,static_cast<float>(ground)+1.25F,24.0F}));
+}
+
+TEST_CASE("Tree branches carry their own crowns without moving trunk or siblings", "[hierarchy][tree]") {
+    const glm::mat4 identity(1);
+    const auto neutral=treeTransforms(identity);
+    const auto bent=treeTransforms(identity,60,30);
+    REQUIRE(bent.trunk == neutral.trunk);
+    REQUIRE(bent.topCrown == neutral.topCrown);
+    REQUIRE(bent.rightBranch == neutral.rightBranch);
+    REQUIRE(bent.rightCrown == neutral.rightCrown);
+    REQUIRE(bent.leftBranch != neutral.leftBranch);
+    REQUIRE(bent.leftCrown != neutral.leftCrown);
+    const auto root=glm::rotate(glm::translate(identity,glm::vec3(4,5,6)),glm::radians(40.0F),glm::vec3(0,1,0));
+    const auto moved=treeTransforms(root);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.trunk[column]-(root*neutral.trunk)[column]) < 0.00001F);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.topCrown[column]-(root*neutral.topCrown)[column]) < 0.00001F);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.leftBranch[column]-(root*neutral.leftBranch)[column]) < 0.00001F);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.rightBranch[column]-(root*neutral.rightBranch)[column]) < 0.00001F);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.leftCrown[column]-(root*neutral.leftCrown)[column]) < 0.00001F);
+    for (int column=0; column<4; ++column)
+        REQUIRE(glm::length(moved.rightCrown[column]-(root*neutral.rightCrown)[column]) < 0.00001F);
+    craft::app::SceneSettings settings;
+    settings.trees[0].leftBranch=60;
+    REQUIRE(settings.trees[1].leftBranch == 30);
+    settings={};
+    REQUIRE(settings.trees[0].leftBranch == 30);
 }

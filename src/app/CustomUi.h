@@ -36,6 +36,7 @@ namespace craft::app {
         DiagnosticsData data_;
         SceneSettings settings_;
         int selectedCharacter_ = 0;
+        int selectedTree_ = 0;
     };
 
 }  // namespace craft::app

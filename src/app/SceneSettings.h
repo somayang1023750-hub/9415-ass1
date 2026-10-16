@@ -4,6 +4,7 @@
 #include <cmath>
 #include <glm/vec3.hpp>
 #include "graphics/HumanoidPose.h"
+#include "graphics/TreePose.h"
 
 namespace craft::app {
 struct CharacterSettings {
@@ -30,5 +31,6 @@ struct SceneSettings {
     float fogStart = 25.0F;
     float fogEnd = 65.0F;
     std::array<CharacterSettings, 2> characters;
+    std::array<graphics::TreeControls,2> trees;
 };
 } // namespace craft::app

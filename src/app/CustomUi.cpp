@@ -23,7 +23,7 @@ namespace craft::app {
             data_.chunkDepth);
         ImGui::Text("Solid Blocks: %zu", data_.solidBlockCount);
         ImGui::Text("Visible faces: %zu | Triangles: %zu", data_.triangleCount / 2, data_.triangleCount);
-        ImGui::TextUnformatted("Terrain: fixed height / seeded material noise");
+        ImGui::TextUnformatted("Terrain: Perlin fBm / seed 941526");
 
         ImGui::SeparatorText("Render Settings");
         ImGui::BeginDisabled(interactionDisabled);
@@ -59,6 +59,16 @@ namespace craft::app {
                 ImGui::SliderFloat("Walk speed", &character.walkSpeed, 0.2F, 3.0F, "%.1f Hz");
             }
             if (ImGui::Button("Reset selected to neutral")) character = {};
+        }
+        if (ImGui::CollapsingHeader("Tree hierarchy")) {
+            ImGui::RadioButton("Tree 1",&selectedTree_,0); ImGui::SameLine();
+            ImGui::RadioButton("Tree 2",&selectedTree_,1);
+            auto& tree=settings_.trees[selectedTree_];
+            ImGui::SliderFloat3("Tree offset",&tree.offset.x,-3.0F,3.0F,"%.1f");
+            ImGui::SliderFloat("Tree yaw",&tree.yaw,-180.0F,180.0F,"%.0f");
+            ImGui::SliderFloat("Left branch",&tree.leftBranch,15.0F,65.0F,"%.0f");
+            ImGui::SliderFloat("Right branch",&tree.rightBranch,15.0F,65.0F,"%.0f");
+            if (ImGui::Button("Reset selected tree")) tree={};
         }
         ImGui::EndDisabled();
     }
