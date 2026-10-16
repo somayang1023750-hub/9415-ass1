@@ -4,17 +4,7 @@
 
 namespace craft::graphics {
 
-    namespace {
-
-        inline size_t getIndex(int x, int y, int z) {
-            return static_cast<size_t>(x + y * Chunk::kWidth + z * Chunk::kWidth * Chunk::kHeight);
-        }
-
-    }  // namespace
-
     Chunk::Chunk() {
-        blocks_.fill(BlockType::Air);
-        generateTerrain();
         buildMesh();
     }
 
@@ -25,51 +15,11 @@ namespace craft::graphics {
     }
 
     void Chunk::generateTerrain() {
-        solidBlockCount_ = 0;
-
-        for (int x = 0; x < kWidth; ++x) {
-            for (int z = 0; z < kDepth; ++z) {
-                int groundHeight = 8 + static_cast<int>(3.0 * std::sin(x * 0.25) + 2.0 * std::cos(z * 0.25));
-                groundHeight = std::clamp(groundHeight, 3, 16);
-
-                for (int y = 0; y <= groundHeight; ++y) {
-                    BlockType type;
-                    if (y == groundHeight) {
-                        type = BlockType::Grass;
-                    }
-                    else if (y >= groundHeight - 2) {
-                        type = BlockType::Dirt;
-                    }
-                    else {
-                        type = BlockType::Stone;
-                    }
-                    blocks_[getIndex(x, y, z)] = type;
-                    ++solidBlockCount_;
-                }
-            }
-        }
-
-        for (int y = 9; y <= 22; ++y) {
-            for (int x = 13; x <= 19; ++x) {
-                for (int z = 13; z <= 19; ++z) {
-                    const bool isWall = (x == 13 || x == 19 || z == 13 || z == 19 || y == 9 || y == 22);
-                    if (isWall) {
-                        blocks_[getIndex(x, y, z)] = BlockType::Brick;
-                        ++solidBlockCount_;
-                    }
-                    else {
-                        blocks_[getIndex(x, y, z)] = BlockType::Air;
-                    }
-                }
-            }
-        }
+        world_.generateTerrain();
     }
 
     bool Chunk::isSolid(int x, int y, int z) const {
-        if (x < 0 || x >= kWidth || y < 0 || y >= kHeight || z < 0 || z >= kDepth) {
-            return false;
-        }
-        return blocks_[getIndex(x, y, z)] != BlockType::Air;
+        return world_.isSolid(x, y, z);
     }
 
     void Chunk::addFace(int x, int y, int z, FaceDirection face, BlockType type,
@@ -146,7 +96,7 @@ namespace craft::graphics {
         for (int x = 0; x < kWidth; ++x) {
             for (int y = 0; y < kHeight; ++y) {
                 for (int z = 0; z < kDepth; ++z) {
-                    BlockType type = blocks_[getIndex(x, y, z)];
+                    BlockType type = world_.blockAt(x, y, z);
                     if (type == BlockType::Air) continue;
 
                     if (!isSolid(x, y + 1, z)) addFace(x, y, z, FaceDirection::Top, type, vertices, indices);

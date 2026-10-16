@@ -1,0 +1,10 @@
+/build*/
+/.pixi/
+/.venv/
+/.vscode/
+/.idea/
+/CMakeUserPresets.json
+/compile_commands.json
+/imgui.ini
+__pycache__/
+*.pyc

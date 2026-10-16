@@ -1,0 +1,5 @@
+renderer=llvmpipe (LLVM 19.1.7, 256 bits)
+OpenGL=4.5 (Core Profile) Mesa 25.0.7-2+deb13u1
+scene solid_blocks=10171 visible_faces=4820 triangles=9640
+benchmark_result sample_count=240 average_ms=5.4452 average_fps=183.6496 resolution=1920x1080 workload=minecraft-voxel-chunk
+benchmark_settings=fixed-camera neutral-poses fog-off wireframe-off

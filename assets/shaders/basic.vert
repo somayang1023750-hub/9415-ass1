@@ -8,6 +8,7 @@ layout(location = 3) in vec3 aColorModifier;
 uniform mat4 uViewProj;
 uniform mat4 uModel;
 
+out vec3 vWorldPosition;
 out vec2 vTexCoord;
 out float vBrightness;
 out vec3 vColorModifier;
@@ -16,5 +17,7 @@ void main() {
     vTexCoord = aTexCoord;
     vBrightness = aBrightness;
     vColorModifier = aColorModifier;
-    gl_Position = uViewProj * uModel * vec4(aPosition, 1.0);
+    vec4 worldPosition = uModel * vec4(aPosition, 1.0);
+    vWorldPosition = worldPosition.xyz;
+    gl_Position = uViewProj * worldPosition;
 }

@@ -3,14 +3,23 @@
 // The rasterizer stores this output color in the framebuffer.
 out vec4 fragColor;
 
+in vec3 vWorldPosition;
 in vec2 vTexCoord;
 in float vBrightness;
 in vec3 vColorModifier;
 
 uniform sampler2D uTexture;
 uniform vec3 uTint;
+uniform int uFogEnabled;
+uniform vec3 uCameraPosition;
+uniform vec3 uFogColor;
+uniform float uFogStart;
+uniform float uFogEnd;
 
 void main() {
     vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor = vec4(texColor.rgb * vColorModifier * vBrightness * uTint, 1.0);
+    vec3 surface = texColor.rgb * vColorModifier * vBrightness * uTint;
+    float distanceToEye = length(vWorldPosition - uCameraPosition);
+    float fog = uFogEnabled != 0 ? smoothstep(uFogStart, uFogEnd, distanceToEye) : 0.0;
+    fragColor = vec4(mix(surface, uFogColor, fog), 1.0);
 }

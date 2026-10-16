@@ -5,6 +5,8 @@
 
 namespace craft::graphics {
 
+    class VoxelWorld;
+
     class Camera {
     public:
         Camera(glm::vec3 position = glm::vec3(16.0F, 16.0F, 40.0F),
@@ -15,7 +17,7 @@ namespace craft::graphics {
         [[nodiscard]] glm::mat4 viewMatrix() const;
         [[nodiscard]] glm::mat4 projectionMatrix(float aspectRatio) const;
 
-        void processKeyboard(int key, int action, float deltaTime);
+        void processKeyboard(int key, int action, float deltaTime, const VoxelWorld* collisionWorld = nullptr);
         void processMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
 
         [[nodiscard]] const glm::vec3& position() const noexcept { return position_; }

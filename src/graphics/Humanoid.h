@@ -5,6 +5,7 @@
 #include <memory>
 #include "graphics/BoxMesh.h"
 #include "graphics/Shader.h"
+#include "graphics/HumanoidPose.h"
 
 namespace craft::graphics {
 
@@ -12,7 +13,7 @@ namespace craft::graphics {
 	public:
 		Humanoid();
 
-		void draw(const Shader& shader, const glm::mat4& parentMatrix, float time = 0.0F, bool neutralPose = true) const;
+		void draw(const Shader& shader, const glm::mat4& parentMatrix, const HumanoidPose& pose = {}) const;
 
 	private:
 		std::unique_ptr<BoxMesh> head_;

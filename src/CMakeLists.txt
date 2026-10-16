@@ -5,6 +5,7 @@ set(CRAFT_CORE_SOURCES
 set(CRAFT_GRAPHICS_SOURCES
     graphics/BoxMesh.cpp
     graphics/Camera.cpp
+    graphics/VoxelWorld.cpp
     graphics/Chunk.cpp
     graphics/Example3DMesh.cpp
     graphics/Humanoid.cpp
@@ -18,7 +19,7 @@ add_library(craft_core STATIC
     ${CRAFT_CORE_SOURCES}
     ${CRAFT_GRAPHICS_SOURCES}
     app/SceneBenchmark.cpp
- "graphics/Camera.h"  "graphics/Texture.h" "graphics/Texture.cpp" "graphics/Voxel.h" "graphics/Chunk.h" "graphics/BoxMesh.h" "graphics/Humanoid.h" "graphics/Humanoid.cpp")
+)
 
 target_include_directories(craft_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -61,7 +62,7 @@ add_executable(Craft
     app/AppUi.cpp
     app/CustomUi.cpp
     ${IMGUI_SOURCES}
- "graphics/Camera.h"  "graphics/Texture.h" "graphics/Texture.cpp" "graphics/Voxel.h" "graphics/Chunk.h" "graphics/BoxMesh.h" "graphics/Humanoid.h" "graphics/Humanoid.cpp")
+)
 
 target_include_directories(Craft PRIVATE
     ${IMGUI_DIR}

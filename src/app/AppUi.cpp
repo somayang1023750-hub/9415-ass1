@@ -39,7 +39,7 @@ void AppUi::beginFrame() {
 }
 
 bool AppUi::draw(const BenchmarkSnapshot& benchmark) {
-  constexpr float panelWidth = 280.0F;
+  constexpr float panelWidth = 380.0F;
   ImGui::SetNextWindowSize(ImVec2(panelWidth, 0.0F), ImGuiCond_Always);
   ImGui::SetNextWindowPos(ImVec2(10.0F, 10.0F), ImGuiCond_FirstUseEver);
   ImGui::Begin("Craft controls", nullptr,

@@ -18,6 +18,7 @@ namespace craft::app {
         AppUi& operator=(const AppUi&) = delete;
 
         void beginFrame();
+        SceneSettings& settings() noexcept { return customUi_.settings(); }
         [[nodiscard]] bool draw(const BenchmarkSnapshot& benchmark);
         void render();
 
