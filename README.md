@@ -1,0 +1,158 @@
+# Craft 3D OpenGL Starter
+
+## Changelog
+
+[2026-09-23] Initial release.  
+[2026-09-30] Downgraded GLFW to 3.3 and add more detailed specification about which part of code should be placed in the benchmark region, in [this section](#240-frame-benchmark).  
+[2026-10-02] Fix "Window system could not provide the requested framebuffer size" crash when click "Run Benchmark" button on Linux/WSL/CSE machines. 
+
+To know more about why we do these changes, and why these issues occurred, you can refer to [CHANGELOG.md](CHANGELOG.md). Sorry about that we didn't discover potential issues earlier.
+
+## Overview
+
+The codebase is the starter code for the COMP3421/COMP9415 26T3 Computer Graphics individual assignment, which requires students to implement a simple Minecraft-style voxel renderer. 
+
+The starter code is designed to be a minimal, working 3D OpenGL application that students can build upon. It opens an OpenGL 3.3 window and renders one fixed, coloured tetrahedron, the tetrahedron is deliberately unrelated to the assessed voxel scene. The starter does **not** provide:
+
+- Voxel or chunk storage, block/cube mesh generation, indexed meshing, or a controllable camera.
+- Texture-atlas UVs, materials, lighting, humanoid modelling, skin mapping, or animation (Optional).
+- Terrain generation or rendering optimisation.
+
+Implement the required features described in the [assignment specification](https://gitlab.cse.unsw.edu.au/coursework/COMP3421/26T3/individual-assignment-spec).
+
+**IMPORTANT**: You should at least make sure your codabase could be compiled and ran successfully on the CSE machines (VLAB). When we marking your submission, we will test your submission on the CSE machines.
+
+## What is provided
+
+- A C++ CMake project using OpenGL 3.3 core, GLFW, GLAD 2 (on Windows/Linux) and GLM.
+- A  minimal 3D example mesh (tetrahedron) with a fixed transform and colour.
+- One compact Dear ImGui window composed from a course-provided benchmark and custom widgets for the example in `src/app/CustomUi.cpp`, you may add your own assignment-specific controls to `CustomUi` to make it easier to develop and debug.
+
+### Optional (For students who have completed COMP6771 Advanced C++ Programming):
+
+- CTest and Catch2 configuration for optional software testing (It will not be assessed, but students who have completed COMP6771 may find them useful as well).
+
+Students are expected to replace/remove `Example3DMesh` and the fixed transform with their own assignment design.
+
+## Project layout
+
+```text
+assets/textures/    Textures you need to load and use for your assignment, you need to add your charactor skin texture to this folder. NameMC is a good website to find skins you like.
+assets/shaders/     Minimal GLSL shaders
+src/app/            AppUi, CustomUi, and the independent benchmark timer
+src/core/           Asset lookup
+src/graphics/       Window, shader, and tetrahedron example
+tests/              Optional Catch2 self-tests
+```
+
+Add implementation files to `src/CMakeLists.txt`. Use
+`craft::core::assetPath(...)` in `main.cpp` to add GLSL shaders. 
+
+## Build with CMake and test with CTest directly
+
+[CMake](https://cmake.org/cmake/help/latest/guide/tutorial/index.html) is the recommended tool for building the project. Other compatible CMake generators and development environments, like Ninja, are also acceptable.
+
+```bash
+cmake -S . -B build # If you have experienced with Ninja, you can add `-G Ninja` to the command line to use Ninja generator
+
+cmake --build build
+ctest --test-dir build --output-on-failure  # Optional self-tests
+```
+
+## Run the application executable directly
+
+After a successful build, the executable is `build/Craft` on macOS/Linux and
+`build/Craft.exe` on Windows:
+
+```bash
+./build/Craft
+```
+
+## 240-frame benchmark
+
+`AppUi` owns the shared Dear ImGui lifecycle and the course-provided benchmark
+section. `CustomUi` remains the separate extension point where students may add
+assignment-specific controls; the starter version only rotates or recolours the
+disposable example object and exposes no camera controls or camera state. 
+
+Keep the code that renders your scene inside the benchmark region, between
+`SceneBenchmark::beginSceneFrame()` and `SceneBenchmark::endSceneFrame()`.
+This includes code such as clearing the buffers, setting shader uniforms,
+and drawing your voxel mesh. Keep ImGui rendering and buffer presentation
+outside this measured region.
+
+To clarify more directly, if you keep current code structure and working in `src/main.cpp`:
+
+```cpp
+int main() {
+  try {
+    // ... omitted for brevity
+    while (!window.shouldClose()) {
+      // ... omitted for brevity
+      benchmark.beginSceneFrame();
+      // Your voxel scene rendering code goes here
+      const bool benchmarkCompleted = benchmark.endSceneFrame();
+      if (benchmarkCompleted) {
+        printBenchmarkResult(benchmark.snapshot(), framebufferWidth,
+          framebufferHeight);
+        }
+        // ... omitted for brevity
+      }
+    } catch (const std::exception& error) {
+        std::cerr << "Craft failed: " << error.what() << '\n';
+        return 1;
+    }
+    return 0;
+}
+```
+
+Use the **Run benchmark** button, or start an automatic run from a terminal:
+
+```bash
+CRAFT_BENCHMARK=1 ./build/Craft     
+```
+
+The benchmark disables VSync, performs 60 warm-up frames, measures exactly 240 scene frames with GPU completion synchronisation, prints `average_ms`, then restores
+VSync, and excludes Dear ImGui and buffer swap. An environment-triggered run closes automatically after printing its result.
+
+The starter result is labelled `workload=starter-3d-tetrahedron`. It validates only the benchmark harness and is not assignment performance evidence. **Replace the tetrahedron with your voxel scene between the `beginSceneFrame` and `endSceneFrame` calls** before test your own implementation.
+
+When improving performance, consider how mesh generation and draw-call count
+affect the result. Use the benchmark to compare approaches; no specific
+optimisation technique is required.
+
+Please check the [assignment specification](https://gitlab.cse.unsw.edu.au/coursework/COMP3421/26T3/individual-assignment-spec) for more details about submission requirements.
+
+## References
+
+There are some recommended references for C++ and OpenGL learning you may find useful for your assignment.
+
+### C++ Basics
+
+- [Learn C++ Programming for Beginners – Free 31-Hour Course](https://www.freecodecamp.org/news/learn-c-with-free-31-hour-course/)
+- [Learn C++ from scratch: The complete guide for beginners](https://www.educative.io/blog/how-to-learn-cpp-the-guide-for-beginners)
+- [C++ Tutorial - Cplusplus.com](https://cplusplus.com/doc/tutorial/)
+- [C++ Tutorial - W3Schools](https://www.w3schools.com/cpp/)
+
+### C++ Advanced
+
+- **[C++ Reference](https://cppreference.com/)** (The most important and up-to-date documents for C++ programming, you may have learned how to use it in COMP6771)
+- [Learn C++](https://www.learncpp.com/)
+- [Programming Tutorials - C, C++, OpenGL, STL](https://www.cprogramming.com/tutorial.html)
+- Professional C++ (5th Edition), by Marc Gregoire
+
+### OpenGL references
+
+- [LearnOpenGL](https://learnopengl.com/) (Recommended OpenGL learning resource, it provides a lot of examples and explanations for OpenGL)
+- [https://www.opengl.org/](https://www.opengl.org/)
+- [OpenGL Step by Step](https://ogldev.org/)
+- [Khronos OpenGL Wiki](https://wikis.khronos.org/opengl/Main_Page)
+- OpenGL SuperBible (5th Edition), by Jr. Richard S. Wright, Nicholas Haemel, Graham Sellers, Benjamin Lipchak
+- OpenGL, A Primer , by Edward Angel, Addison Wesley
+
+### Other references
+- [CMake Tutorial](https://cmake.org/cmake/help/latest/guide/tutorial/index.html)
+- [GLFW Documentation](https://www.glfw.org/docs/3.3/)
+- [GLM Manual](https://github.com/g-truc/glm/blob/master/manual.md)
+- [stb library](https://github.com/nothings/stb)
+- [NameMC](https://namemc.com/minecraft-skins) (A good website to find Minecraft skins you like, you can download your favourite skin and add it to `assets/textures/` folder for your assignment)
